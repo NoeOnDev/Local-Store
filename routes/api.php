@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\CitationController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -28,3 +29,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/appointments/{id}', [AppointmentController::class, 'update']);
     Route::delete('/appointments/{id}', [AppointmentController::class, 'destroy']);
 });
+
+Route::post('/citas/creartabla', [CitationController::class, 'createTable']);
+Route::post('/citas/{nameTable}', [CitationController::class, 'addValues']);
+Route::get('/citas/{nameTable}', [CitationController::class, 'getValues']);
+Route::get('/citas/{nameTable}/{id}', [CitationController::class, 'getByIdValues']);
+Route::put('/citas/{nameTable}/{id}', [CitationController::class, 'updateValues']);
+Route::delete('/citas/{nameTable}/{id}', [CitationController::class, 'deleteValues']);
+Route::delete('/citas/{nameTable}', [CitationController::class, 'deleteTable']);
