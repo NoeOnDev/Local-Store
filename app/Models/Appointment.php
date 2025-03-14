@@ -13,7 +13,6 @@ class Appointment extends Model
         'user_id',
         'contact_id',
         'title',
-        'notes',
         'start',
         'end',
         'status'
@@ -32,5 +31,10 @@ class Appointment extends Model
     public function contact()
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function fieldValues()
+    {
+        return $this->hasMany(AppointmentFieldValue::class);
     }
 }

@@ -15,6 +15,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'business_type_id',
+        'has_custom_fields'
     ];
 
     protected $hidden = [
@@ -38,5 +40,15 @@ class User extends Authenticatable
     public function appointments()
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    public function businessType()
+    {
+        return $this->belongsTo(BusinessType::class);
+    }
+
+    public function appointmentFields()
+    {
+        return $this->hasMany(AppointmentField::class);
     }
 }

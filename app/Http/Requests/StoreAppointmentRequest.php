@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\AppointmentField;
+use Illuminate\Validation\ValidationException;
 
 class StoreAppointmentRequest extends FormRequest
 {
@@ -11,7 +13,19 @@ class StoreAppointmentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->business_type_id !== null;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation()
+    {
+        if ($this->user()->business_type_id === null) {
+            throw ValidationException::withMessages([
+                'business_type' => ['Debes completar la configuración del tipo de negocio antes de crear citas.']
+            ]);
+        }
     }
 
     /**
@@ -21,13 +35,37 @@ class StoreAppointmentRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'contact_id' => 'required|exists:contacts,id',
             'title' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'start' => 'required|date_format:Y-m-d H:i:s|after:now',
             'end' => 'required|date_format:Y-m-d H:i:s|after:start',
-            'status' => 'required|in:pending,confirmed,cancelled,completed'
+            'status' => 'required|in:pending,confirmed,cancelled,completed',
+            'field_values' => 'array'
         ];
+
+        $fields = AppointmentField::where('business_type_id', $this->user()->business_type_id)
+            ->where('active', true)
+            ->get();
+
+        foreach ($fields as $field) {
+            $fieldRule = $field->required ? 'required' : 'nullable';
+
+            switch ($field->type) {
+                case 'select':
+                    $fieldRule .= '|in:' . implode(',', $field->options);
+                    break;
+                case 'boolean':
+                    $fieldRule .= '|boolean';
+                    break;
+                default:
+                    $fieldRule .= '|string';
+            }
+
+            $rules["field_values.{$field->id}"] = $fieldRule;
+        }
+
+        return $rules;
     }
 }

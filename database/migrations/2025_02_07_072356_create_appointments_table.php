@@ -13,7 +13,6 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('contact_id')->constrained()->onDelete('cascade');
             $table->string('title');
-            $table->text('notes')->nullable();
             $table->dateTime('start');
             $table->dateTime('end');
             $table->enum('status', ['pending', 'confirmed', 'cancelled', 'completed'])->default('pending');

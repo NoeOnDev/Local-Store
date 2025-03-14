@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('appointment_fields', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('business_type_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('name');
+            $table->string('type');
+            $table->boolean('required')->default(false);
+            $table->json('options')->nullable();
+            $table->integer('order')->default(0);
+            $table->boolean('active')->default(true);
+            $table->timestamps();
+
+            $table->index(['business_type_id', 'user_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('appointment_fields');
+    }
+};

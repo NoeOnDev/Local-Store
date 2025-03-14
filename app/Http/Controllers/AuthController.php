@@ -4,10 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\VerificationCode;
+use App\Models\BusinessType;
+use App\Models\AppointmentField;
+use App\Http\Resources\BusinessTypeResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -91,5 +95,66 @@ class AuthController extends Controller
         $verificationCode->save();
 
         return response()->json(['message' => 'Email verified successfully.'], 200);
+    }
+
+    public function setBusinessType(Request $request)
+    {
+        $request->validate([
+            'business_type_id' => 'required|exists:business_types,id',
+            'mode' => 'required|in:use_template,customize'
+        ]);
+
+        $user = Auth::user();
+
+        if ($request->mode === 'use_template') {
+            $user->business_type_id = $request->business_type_id;
+            $user->has_custom_fields = false;
+            $user->save();
+
+            $user->appointmentFields()->delete();
+
+            $businessType = BusinessType::with('appointmentFields')->find($request->business_type_id);
+
+            return response()->json([
+                'message' => 'Template predefinido configurado exitosamente',
+                'business_type' => new BusinessTypeResource($businessType)
+            ]);
+        }
+
+        DB::transaction(function () use ($request, $user) {
+            $user->appointmentFields()->delete();
+
+            $templateFields = AppointmentField::where('business_type_id', $request->business_type_id)
+                ->get();
+
+            foreach ($templateFields as $field) {
+                $user->appointmentFields()->create([
+                    'name' => $field->name,
+                    'type' => $field->type,
+                    'required' => $field->required,
+                    'options' => $field->options,
+                    'order' => $field->order,
+                    'active' => true
+                ]);
+            }
+
+            $user->update([
+                'business_type_id' => null,
+                'has_custom_fields' => true
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Template personalizado creado exitosamente',
+            'fields' => $user->appointmentFields
+        ]);
+    }
+
+    public function getBusinessTypes()
+    {
+        $types = BusinessType::with('appointmentFields')->get();
+        return response()->json([
+            'business_types' => BusinessTypeResource::collection($types)
+        ]);
     }
 }
