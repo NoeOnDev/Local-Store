@@ -34,11 +34,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::patch('/appointments/{id}', [AppointmentController::class, 'update']);
         Route::delete('/appointments/{id}', [AppointmentController::class, 'destroy']);
 
-        Route::middleware(['custom.fields'])->group(function () {
-            Route::get('/appointment-fields', [AppointmentFieldController::class, 'index']);
-            Route::post('/appointment-fields', [AppointmentFieldController::class, 'store']);
-            Route::put('/appointment-fields/{id}', [AppointmentFieldController::class, 'update']);
-            Route::delete('/appointment-fields/{id}', [AppointmentFieldController::class, 'destroy']);
-        });
+        Route::get('/appointment-fields', [AppointmentFieldController::class, 'index']);
+        Route::post('/appointment-fields', [AppointmentFieldController::class, 'store']);
+        Route::put('/appointment-fields/{id}', [AppointmentFieldController::class, 'update']);
+        Route::delete('/appointment-fields/{id}', [AppointmentFieldController::class, 'destroy']);
     });
 });

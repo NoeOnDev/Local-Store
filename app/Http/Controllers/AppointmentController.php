@@ -69,8 +69,21 @@ class AppointmentController extends Controller
     public function update(StoreAppointmentRequest $request, $id)
     {
         $appointment = Auth::user()->appointments()->findOrFail($id);
+
         $appointment->update($request->validated());
-        $appointment->load('contact:id,first_name,last_name');
+
+        if ($request->has('field_values')) {
+            $appointment->fieldValues()->delete();
+
+            foreach ($request->field_values as $fieldId => $value) {
+                $appointment->fieldValues()->create([
+                    'appointment_field_id' => $fieldId,
+                    'value' => $value
+                ]);
+            }
+        }
+
+        $appointment->load(['contact:id,first_name,last_name', 'fieldValues.field']);
 
         return response()->json(['appointment' => $appointment]);
     }

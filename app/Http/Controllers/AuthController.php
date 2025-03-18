@@ -101,25 +101,9 @@ class AuthController extends Controller
     {
         $request->validate([
             'business_type_id' => 'required|exists:business_types,id',
-            'mode' => 'required|in:use_template,customize'
         ]);
 
         $user = Auth::user();
-
-        if ($request->mode === 'use_template') {
-            $user->business_type_id = $request->business_type_id;
-            $user->has_custom_fields = false;
-            $user->save();
-
-            $user->appointmentFields()->delete();
-
-            $businessType = BusinessType::with('appointmentFields')->find($request->business_type_id);
-
-            return response()->json([
-                'message' => 'Template predefinido configurado exitosamente',
-                'business_type' => new BusinessTypeResource($businessType)
-            ]);
-        }
 
         DB::transaction(function () use ($request, $user) {
             $user->appointmentFields()->delete();
@@ -145,7 +129,7 @@ class AuthController extends Controller
         });
 
         return response()->json([
-            'message' => 'Template personalizado creado exitosamente',
+            'message' => 'Campos configurados exitosamente',
             'fields' => $user->appointmentFields
         ]);
     }

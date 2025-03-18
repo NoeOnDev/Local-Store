@@ -8,31 +8,20 @@ use Illuminate\Validation\ValidationException;
 
 class StoreAppointmentRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return $this->user()->business_type_id !== null;
+        return $this->user()->business_type_id !== null || $this->user()->has_custom_fields;
     }
 
-    /**
-     * Prepare the data for validation.
-     */
     protected function prepareForValidation()
     {
-        if ($this->user()->business_type_id === null) {
+        if ($this->user()->business_type_id === null && !$this->user()->has_custom_fields) {
             throw ValidationException::withMessages([
                 'business_type' => ['Debes completar la configuración del tipo de negocio antes de crear citas.']
             ]);
         }
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         $rules = [
@@ -45,9 +34,15 @@ class StoreAppointmentRequest extends FormRequest
             'field_values' => 'array'
         ];
 
-        $fields = AppointmentField::where('business_type_id', $this->user()->business_type_id)
-            ->where('active', true)
-            ->get();
+        if ($this->user()->business_type_id) {
+            $fields = AppointmentField::where('business_type_id', $this->user()->business_type_id)
+                ->where('active', true)
+                ->get();
+        } else {
+            $fields = $this->user()->appointmentFields()
+                ->where('active', true)
+                ->get();
+        }
 
         foreach ($fields as $field) {
             $fieldRule = $field->required ? 'required' : 'nullable';
@@ -58,6 +53,12 @@ class StoreAppointmentRequest extends FormRequest
                     break;
                 case 'boolean':
                     $fieldRule .= '|boolean';
+                    break;
+                case 'date':
+                    $fieldRule .= '|date_format:Y-m-d';
+                    break;
+                case 'number':
+                    $fieldRule .= '|numeric';
                     break;
                 default:
                     $fieldRule .= '|string';
