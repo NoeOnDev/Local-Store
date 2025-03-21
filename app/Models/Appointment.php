@@ -15,12 +15,14 @@ class Appointment extends Model
         'title',
         'start',
         'end',
-        'status'
+        'status',
+        'is_attended'
     ];
 
     protected $casts = [
         'start' => 'datetime',
-        'end' => 'datetime'
+        'end' => 'datetime',
+        'is_attended' => 'boolean'
     ];
 
     public function user()

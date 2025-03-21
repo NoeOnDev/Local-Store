@@ -6,6 +6,8 @@ use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\AppointmentField;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class AppointmentController extends Controller
 {
@@ -43,16 +45,7 @@ class AppointmentController extends Controller
     {
         $appointment = Auth::user()->appointments()->create($request->validated());
 
-        if ($request->has('field_values')) {
-            foreach ($request->field_values as $fieldId => $value) {
-                $appointment->fieldValues()->create([
-                    'appointment_field_id' => $fieldId,
-                    'value' => $value
-                ]);
-            }
-        }
-
-        $appointment->load(['contact:id,first_name,last_name', 'fieldValues']);
+        $appointment->load(['contact:id,first_name,last_name']);
 
         return response()->json(['appointment' => $appointment], 201);
     }
@@ -70,18 +63,13 @@ class AppointmentController extends Controller
     {
         $appointment = Auth::user()->appointments()->findOrFail($id);
 
-        $appointment->update($request->validated());
-
-        if ($request->has('field_values')) {
-            $appointment->fieldValues()->delete();
-
-            foreach ($request->field_values as $fieldId => $value) {
-                $appointment->fieldValues()->create([
-                    'appointment_field_id' => $fieldId,
-                    'value' => $value
-                ]);
-            }
+        if ($appointment->is_attended) {
+            return response()->json([
+                'message' => 'No se pueden editar citas que ya han sido atendidas'
+            ], 400);
         }
+
+        $appointment->update($request->validated());
 
         $appointment->load(['contact:id,first_name,last_name', 'fieldValues.field']);
 
@@ -98,64 +86,91 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function getFormStructure()
+    public function attend(Request $request, $id)
     {
-        $user = Auth::user();
-        $customFields = [];
+        $appointment = Auth::user()->appointments()->findOrFail($id);
 
-        if ($user->business_type_id) {
-            $customFields = AppointmentField::where('business_type_id', $user->business_type_id)
-                ->where('active', true)
-                ->orderBy('order')
-                ->get(['id', 'name', 'type', 'required', 'options']);
-        } elseif ($user->has_custom_fields) {
-            $customFields = $user->appointmentFields()
-                ->where('active', true)
-                ->orderBy('order')
-                ->get(['id', 'name', 'type', 'required', 'options']);
-        } else {
+        if (!in_array($appointment->status, ['pending', 'confirmed'])) {
             return response()->json([
-                'message' => 'Debes seleccionar un tipo de negocio o crear campos personalizados',
+                'message' => 'Solo se pueden atender citas pendientes o confirmadas'
             ], 400);
         }
 
-        $structure = [
-            'default_fields' => [
-                [
-                    'name' => 'contact_id',
-                    'type' => 'select',
-                    'label' => 'Contacto',
-                    'required' => true
-                ],
-                [
-                    'name' => 'title',
-                    'type' => 'text',
-                    'label' => 'Título',
-                    'required' => true
-                ],
-                [
-                    'name' => 'start',
-                    'type' => 'datetime',
-                    'label' => 'Fecha y hora de inicio',
-                    'required' => true
-                ],
-                [
-                    'name' => 'end',
-                    'type' => 'datetime',
-                    'label' => 'Fecha y hora de fin',
-                    'required' => true
-                ],
-                [
-                    'name' => 'status',
-                    'type' => 'select',
-                    'label' => 'Estado',
-                    'required' => true,
-                    'options' => ['pending', 'confirmed', 'cancelled', 'completed']
-                ]
-            ],
-            'custom_fields' => $customFields
+        $request->validate([
+            'field_values' => 'required|array'
+        ]);
+
+        $validator = Validator::make($request->all(), $this->getAttendValidationRules());
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::transaction(function () use ($appointment, $request) {
+            $appointment->update([
+                'status' => 'attended',
+                'is_attended' => true
+            ]);
+
+            $appointment->fieldValues()->delete();
+
+            foreach ($request->field_values as $fieldId => $value) {
+                $appointment->fieldValues()->create([
+                    'appointment_field_id' => $fieldId,
+                    'value' => $value
+                ]);
+            }
+        });
+
+        $appointment->load(['contact:id,first_name,last_name', 'fieldValues.field']);
+
+        return response()->json(['appointment' => $appointment]);
+    }
+
+    private function getAttendValidationRules()
+    {
+        $rules = [
+            'field_values' => 'required|array'
         ];
 
-        return response()->json($structure);
+        $user = Auth::user();
+
+        if ($user->business_type_id) {
+            $fields = AppointmentField::where('business_type_id', $user->business_type_id)
+                ->where('active', true)
+                ->get();
+        } else {
+            $fields = $user->appointmentFields()
+                ->where('active', true)
+                ->get();
+        }
+
+        foreach ($fields as $field) {
+            $fieldRule = $field->required ? 'required' : 'nullable';
+
+            switch ($field->type) {
+                case 'select':
+                    $fieldRule .= '|in:' . implode(',', $field->options);
+                    break;
+                case 'boolean':
+                    $fieldRule .= '|boolean';
+                    break;
+                case 'date':
+                    $fieldRule .= '|date_format:Y-m-d';
+                    break;
+                case 'number':
+                    $fieldRule .= '|numeric';
+                    break;
+                default:
+                    $fieldRule .= '|string';
+            }
+
+            $rules["field_values.{$field->id}"] = $fieldRule;
+        }
+
+        return $rules;
     }
 }

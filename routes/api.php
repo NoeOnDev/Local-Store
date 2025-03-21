@@ -27,7 +27,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/contacts/{id}', [ContactController::class, 'destroy']);
 
     Route::middleware(['require.business.type'])->group(function () {
-        Route::get('/appointments/form-structure', [AppointmentController::class, 'getFormStructure']);
         Route::get('/appointments', [AppointmentController::class, 'index']);
         Route::post('/appointments', [AppointmentController::class, 'store']);
         Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
@@ -38,5 +37,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/appointment-fields', [AppointmentFieldController::class, 'store']);
         Route::put('/appointment-fields/{id}', [AppointmentFieldController::class, 'update']);
         Route::delete('/appointment-fields/{id}', [AppointmentFieldController::class, 'destroy']);
+        Route::post('/appointments/{id}/attend', [AppointmentController::class, 'attend']);
     });
 });
