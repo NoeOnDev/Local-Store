@@ -53,7 +53,7 @@ class AppointmentController extends Controller
     public function show($id)
     {
         $appointment = Auth::user()->appointments()
-            ->with(['contact:id,first_name,last_name', 'fieldValues'])
+            ->with(['contact:id,first_name,last_name', 'fieldValues.field'])
             ->findOrFail($id);
 
         return response()->json(['appointment' => $appointment]);
@@ -63,7 +63,7 @@ class AppointmentController extends Controller
     {
         $appointment = Auth::user()->appointments()->findOrFail($id);
 
-        if ($appointment->is_attended) {
+        if ($appointment->status === 'attended') {
             return response()->json([
                 'message' => 'No se pueden editar citas que ya han sido atendidas'
             ], 400);
@@ -90,9 +90,9 @@ class AppointmentController extends Controller
     {
         $appointment = Auth::user()->appointments()->findOrFail($id);
 
-        if (!in_array($appointment->status, ['pending', 'confirmed'])) {
+        if ($appointment->status !== 'pending') {
             return response()->json([
-                'message' => 'Solo se pueden atender citas pendientes o confirmadas'
+                'message' => 'Solo se pueden atender citas pendientes'
             ], 400);
         }
 
@@ -111,8 +111,7 @@ class AppointmentController extends Controller
 
         DB::transaction(function () use ($appointment, $request) {
             $appointment->update([
-                'status' => 'attended',
-                'is_attended' => true
+                'status' => 'attended'
             ]);
 
             $appointment->fieldValues()->delete();
