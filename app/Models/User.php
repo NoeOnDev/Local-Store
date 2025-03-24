@@ -15,6 +15,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'profile_image',
         'business_type_id',
         'has_custom_fields'
     ];

@@ -39,4 +39,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::delete('/appointment-fields/{id}', [AppointmentFieldController::class, 'destroy']);
         Route::post('/appointments/{id}/attend', [AppointmentController::class, 'attend']);
     });
+
+    Route::get('/profile', [AuthController::class, 'getProfile']);
+    Route::post('/profile/image', [AuthController::class, 'updateProfileImage']);
 });

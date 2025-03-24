@@ -22,18 +22,26 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        $imagePath = null;
+        if ($request->hasFile('profile_image')) {
+            $imagePath = $request->file('profile_image')->store('profile_images', 'public');
+        }
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'profile_image' => $imagePath,
         ]);
 
         $code = rand(100000, 999999);
         VerificationCode::create([
             'user_id' => $user->id,
             'code' => $code,
+            'is_valid' => true,
             'expires_at' => now()->addMinutes(10),
         ]);
 
@@ -139,6 +147,54 @@ class AuthController extends Controller
         $types = BusinessType::with('appointmentFields')->get();
         return response()->json([
             'business_types' => BusinessTypeResource::collection($types)
+        ]);
+    }
+
+    public function getProfile()
+    {
+        $user = Auth::user();
+        $user->load(['businessType', 'appointmentFields']);
+
+        $profileImageUrl = $user->profile_image
+            ? asset('storage/' . $user->profile_image)
+            : null;
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'profile_image_url' => $profileImageUrl,
+                'email_verified_at' => $user->email_verified_at,
+                'business_type' => $user->businessType,
+                'has_custom_fields' => $user->has_custom_fields,
+                'created_at' => $user->created_at,
+                'appointment_fields_count' => $user->appointmentFields->count()
+            ]
+        ]);
+    }
+
+    public function updateProfileImage(Request $request)
+    {
+        $request->validate([
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = Auth::user();
+
+        if ($user->profile_image && file_exists(storage_path('app/public/' . $user->profile_image))) {
+            unlink(storage_path('app/public/' . $user->profile_image));
+        }
+
+        $imagePath = $request->file('profile_image')->store('profile_images', 'public');
+
+        $user->update([
+            'profile_image' => $imagePath
+        ]);
+
+        return response()->json([
+            'message' => 'Imagen de perfil actualizada exitosamente',
+            'profile_image' => $imagePath
         ]);
     }
 }
