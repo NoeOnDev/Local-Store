@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -60,16 +59,45 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
-            ]);
+        try {
+            if (!Auth::attempt($request->only('email', 'password'))) {
+                return response()->json([
+                    'success' => false,
+                    'user' => null,
+                    'error' => 'Las credenciales proporcionadas son incorrectas.',
+                    'token' => null
+                ], 401);
+            }
+
+            $user = $request->user();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            $profileImageUrl = $user->profile_image
+                ? asset('storage/' . $user->profile_image)
+                : null;
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'displayName' => $user->name,
+                    'email' => $user->email,
+                    'photoURL' => $profileImageUrl,
+                    'id' => $user->id,
+                    'emailVerified' => $user->email_verified_at !== null,
+                    'hasCustomFields' => $user->has_custom_fields,
+                    'businessTypeId' => $user->business_type_id
+                ],
+                'error' => null,
+                'token' => $token
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'user' => null,
+                'error' => 'Error al iniciar sesión: ' . $e->getMessage(),
+                'token' => null
+            ], 500);
         }
-
-        $user = $request->user();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json(['token' => $token], 200);
     }
 
     public function getUsers()
@@ -160,18 +188,19 @@ class AuthController extends Controller
             : null;
 
         return response()->json([
+            'success' => true,
             'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
+                'displayName' => $user->name,
                 'email' => $user->email,
-                'profile_image_url' => $profileImageUrl,
-                'email_verified_at' => $user->email_verified_at,
-                'business_type' => $user->businessType,
-                'has_custom_fields' => $user->has_custom_fields,
-                'created_at' => $user->created_at,
-                'appointment_fields_count' => $user->appointmentFields->count()
-            ]
-        ]);
+                'photoURL' => $profileImageUrl,
+                'id' => $user->id,
+                'emailVerified' => $user->email_verified_at !== null,
+                'hasCustomFields' => $user->has_custom_fields,
+                'businessTypeId' => $user->business_type_id
+            ],
+            'error' => null,
+            'token' => null
+        ], 200);
     }
 
     public function updateProfileImage(Request $request)

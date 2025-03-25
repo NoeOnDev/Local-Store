@@ -21,6 +21,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/business-types', [AuthController::class, 'getBusinessTypes']);
     Route::post('/onboarding/business-type', [AuthController::class, 'setBusinessType']);
     Route::post('/contacts', [ContactController::class, 'store']);
+
+    // Nueva ruta para obtener todos los contactos
+    Route::get('/contacts', [ContactController::class, 'index']);
+
     Route::get('/contacts/search', [ContactController::class, 'search']);
     Route::get('/contacts/{id}', [ContactController::class, 'show']);
     Route::patch('/contacts/{id}', [ContactController::class, 'update']);

@@ -22,7 +22,7 @@ class UpdateContactRequest extends FormRequest
             'phone_number' => 'sometimes|required|string|max:20',
             'state' => 'sometimes|required|string|max:255',
             'address' => 'sometimes|required|string|max:255',
-            'birth_date' => 'sometimes|required|date',
+            'birth_date' => 'nullable|date_format:Y-m-d',
             'notes' => 'nullable|string',
         ];
     }

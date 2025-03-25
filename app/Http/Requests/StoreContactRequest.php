@@ -22,7 +22,7 @@ class StoreContactRequest extends FormRequest
             'phone_number' => 'required|string|max:20',
             'state' => 'required|string|max:255',
             'address' => 'required|string|max:255',
-            'birth_date' => 'required|date',
+            'birth_date' => 'nullable|date_format:Y-m-d',
             'notes' => 'nullable|string',
         ];
     }
