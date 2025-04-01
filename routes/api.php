@@ -1,16 +1,10 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AppointmentFieldController;
-
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -19,6 +13,7 @@ Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/business-types', [AuthController::class, 'getBusinessTypes']);
+    Route::post('/onboarding/custom-fields', [AuthController::class, 'setCustomFields']);
     Route::post('/onboarding/business-type', [AuthController::class, 'setBusinessType']);
     Route::post('/contacts', [ContactController::class, 'store']);
 

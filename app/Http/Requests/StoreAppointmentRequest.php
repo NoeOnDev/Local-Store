@@ -10,14 +10,14 @@ class StoreAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->business_type_id !== null || $this->user()->has_custom_fields;
+        return $this->user()->has_custom_fields;
     }
 
     protected function prepareForValidation()
     {
-        if ($this->user()->business_type_id === null && !$this->user()->has_custom_fields) {
+        if (!$this->user()->has_custom_fields) {
             throw ValidationException::withMessages([
-                'business_type' => ['Debes completar la configuración del tipo de negocio antes de crear citas.']
+                'custom_fields' => ['Debes completar la configuración de campos personalizados antes de crear citas.']
             ]);
         }
     }

@@ -136,16 +136,9 @@ class AppointmentController extends Controller
         ];
 
         $user = Auth::user();
-
-        if ($user->business_type_id) {
-            $fields = AppointmentField::where('business_type_id', $user->business_type_id)
-                ->where('active', true)
-                ->get();
-        } else {
-            $fields = $user->appointmentFields()
-                ->where('active', true)
-                ->get();
-        }
+        $fields = $user->appointmentFields()
+            ->where('active', true)
+            ->get();
 
         foreach ($fields as $field) {
             $fieldRule = $field->required ? 'required' : 'nullable';

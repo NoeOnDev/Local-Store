@@ -15,11 +15,6 @@ class BusinessType extends Model
         'description'
     ];
 
-    public function users()
-    {
-        return $this->hasMany(User::class);
-    }
-
     public function appointmentFields()
     {
         return $this->hasMany(AppointmentField::class);

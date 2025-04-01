@@ -85,7 +85,6 @@ class AuthController extends Controller
                     'id' => $user->id,
                     'emailVerified' => $user->email_verified_at !== null,
                     'hasCustomFields' => $user->has_custom_fields,
-                    'businessTypeId' => $user->business_type_id
                 ],
                 'error' => null,
                 'token' => $token
@@ -159,13 +158,53 @@ class AuthController extends Controller
             }
 
             $user->update([
-                'business_type_id' => null,
                 'has_custom_fields' => true
             ]);
         });
 
         return response()->json([
             'message' => 'Campos configurados exitosamente',
+            'fields' => $user->appointmentFields
+        ]);
+    }
+
+    public function setCustomFields(Request $request)
+    {
+        $request->validate([
+            'fields' => 'required|array',
+            'fields.*.name' => 'required|string|max:255',
+            'fields.*.type' => 'required|in:text,select,boolean,date,number',
+            'fields.*.required' => 'required|boolean',
+            'fields.*.options' => 'required_if:fields.*.type,select|array',
+            'fields.*.order' => 'integer',
+        ]);
+
+        $user = Auth::user();
+
+        DB::transaction(function () use ($request, $user) {
+            // Eliminar campos existentes
+            $user->appointmentFields()->delete();
+
+            // Crear nuevos campos
+            foreach ($request->fields as $index => $fieldData) {
+                $user->appointmentFields()->create([
+                    'name' => $fieldData['name'],
+                    'type' => $fieldData['type'],
+                    'required' => $fieldData['required'],
+                    'options' => $fieldData['options'] ?? [],
+                    'order' => $fieldData['order'] ?? $index,
+                    'active' => true
+                ]);
+            }
+
+            // Marcar como configurado
+            $user->update([
+                'has_custom_fields' => true
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Campos personalizados configurados exitosamente',
             'fields' => $user->appointmentFields
         ]);
     }
@@ -181,7 +220,7 @@ class AuthController extends Controller
     public function getProfile()
     {
         $user = Auth::user();
-        $user->load(['businessType', 'appointmentFields']);
+        $user->load(['appointmentFields']);
 
         $profileImageUrl = $user->profile_image
             ? asset('storage/' . $user->profile_image)
@@ -196,7 +235,6 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'emailVerified' => $user->email_verified_at !== null,
                 'hasCustomFields' => $user->has_custom_fields,
-                'businessTypeId' => $user->business_type_id
             ],
             'error' => null,
             'token' => null

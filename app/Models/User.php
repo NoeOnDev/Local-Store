@@ -16,7 +16,6 @@ class User extends Authenticatable
         'email',
         'password',
         'profile_image',
-        'business_type_id',
         'has_custom_fields'
     ];
 
@@ -41,11 +40,6 @@ class User extends Authenticatable
     public function appointments()
     {
         return $this->hasMany(Appointment::class);
-    }
-
-    public function businessType()
-    {
-        return $this->belongsTo(BusinessType::class);
     }
 
     public function appointmentFields()

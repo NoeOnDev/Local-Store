@@ -15,7 +15,6 @@ return Application::configure(basePath: dirname(__DIR__))
         //
         $middleware->alias([
             'require.business.type' => \App\Http\Middleware\RequireBusinessType::class,
-            'custom.fields' => \App\Http\Middleware\RequireCustomFields::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
