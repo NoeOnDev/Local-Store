@@ -26,6 +26,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::middleware(['require.business.type'])->group(function () {
         Route::get('/appointments', [AppointmentController::class, 'index']);
+        Route::get('/appointments/search', [AppointmentController::class, 'search']);
+        Route::get('/appointments/export-columns', [AppointmentController::class, 'getExportColumns']);
+        Route::get('/appointments/export', [AppointmentController::class, 'exportCsv']);
         Route::post('/appointments', [AppointmentController::class, 'store']);
         Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
         Route::patch('/appointments/{id}', [AppointmentController::class, 'update']);
