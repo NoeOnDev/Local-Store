@@ -182,10 +182,8 @@ class AuthController extends Controller
         $user = Auth::user();
 
         DB::transaction(function () use ($request, $user) {
-            // Eliminar campos existentes
             $user->appointmentFields()->delete();
 
-            // Crear nuevos campos
             foreach ($request->fields as $index => $fieldData) {
                 $user->appointmentFields()->create([
                     'name' => $fieldData['name'],
@@ -197,7 +195,6 @@ class AuthController extends Controller
                 ]);
             }
 
-            // Marcar como configurado
             $user->update([
                 'has_custom_fields' => true
             ]);
@@ -259,9 +256,11 @@ class AuthController extends Controller
             'profile_image' => $imagePath
         ]);
 
+        $profileImageUrl = asset('storage/' . $imagePath);
+
         return response()->json([
             'message' => 'Imagen de perfil actualizada exitosamente',
-            'profile_image' => $imagePath
+            'photoURL' => $profileImageUrl
         ]);
     }
 }

@@ -16,9 +16,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/onboarding/custom-fields', [AuthController::class, 'setCustomFields']);
     Route::post('/onboarding/business-type', [AuthController::class, 'setBusinessType']);
     Route::post('/contacts', [ContactController::class, 'store']);
-
     Route::get('/contacts', [ContactController::class, 'index']);
-
     Route::get('/contacts/search', [ContactController::class, 'search']);
     Route::get('/contacts/{id}', [ContactController::class, 'show']);
     Route::patch('/contacts/{id}', [ContactController::class, 'update']);
